@@ -17,7 +17,7 @@ from reportlab.lib.enums import TA_CENTER, TA_LEFT
 
 app = Flask(__name__)
 
-VT_API_KEY = os.environ.get("VT_API_KEY", "5513a4710bc8aba8465ed89bdd974f1c86a5607e0df72ed904d86b9fd03be81c")  # Replace with your key
+VT_API_KEY = os.environ.get("VT_API_KEY", "")  # Replace with your key
 
 # ─────────────────────────────────────────────
 # DATABASE
