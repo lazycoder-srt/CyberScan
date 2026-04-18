@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>CyberScan — Scan History</title>
+    <link rel="icon" href="{{ url_for('static', filename='logo.png') }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #020812;
+            --surface: rgba(0,255,180,0.04);
+            --border: rgba(0,255,180,0.15);
+            --accent: #00ffb4;
+            --danger: #ff3c5a;
+            --warning: #ffd60a;
+            --text: #c8ffe8;
+            --muted: #4a7060;
+            --glow: 0 0 30px rgba(0,255,180,0.2);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Rajdhani', sans-serif;
+            min-height: 100vh;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(0,255,180,0.025) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,255,180,0.025) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .navbar {
+            background: rgba(2,8,18,0.95);
+            border-bottom: 1px solid var(--border);
+            backdrop-filter: blur(20px);
+            padding: 12px 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .navbar-brand {
+            font-family: 'Orbitron', monospace;
+            font-size: 1rem;
+            color: var(--accent);
+            letter-spacing: 3px;
+            text-shadow: 0 0 15px var(--accent);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .nav-logo { width: 28px; height: 28px; border-radius: 5px; filter: drop-shadow(0 0 5px var(--accent)); }
+        .btn-back {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.75rem;
+            letter-spacing: 2px;
+            padding: 8px 20px;
+            border: 1px solid var(--border);
+            color: var(--muted);
+            background: transparent;
+            text-decoration: none;
+            transition: 0.3s;
+        }
+        .btn-back:hover { border-color: var(--accent); color: var(--accent); }
+
+        /* PAGE */
+        .page-wrap { position: relative; z-index: 2; padding: 40px 0 80px; }
+
+        .page-header {
+            margin-bottom: 35px;
+        }
+        .page-tag {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.72rem;
+            color: var(--muted);
+            letter-spacing: 4px;
+            margin-bottom: 8px;
+        }
+        .page-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: #fff;
+        }
+        .page-title span { color: var(--accent); }
+
+        /* STATS BAR */
+        .stats-bar {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        .stat-pill {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .stat-pill-num {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.4rem;
+            font-weight: 900;
+            color: var(--accent);
+        }
+        .stat-pill-label {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--muted);
+            letter-spacing: 2px;
+        }
+
+        /* TABLE */
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.92rem;
+        }
+        .history-table thead tr {
+            border-bottom: 1px solid var(--border);
+        }
+        .history-table th {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.7rem;
+            letter-spacing: 3px;
+            color: var(--muted);
+            padding: 12px 16px;
+            font-weight: normal;
+            text-align: left;
+        }
+        .history-table tbody tr {
+            border-bottom: 1px solid rgba(0,255,180,0.06);
+            transition: 0.2s;
+        }
+        .history-table tbody tr:hover {
+            background: rgba(0,255,180,0.03);
+        }
+        .history-table td {
+            padding: 14px 16px;
+            vertical-align: middle;
+        }
+
+        /* ID cell */
+        .scan-id {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--muted);
+        }
+
+        /* TYPE badge */
+        .type-badge {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.7rem;
+            letter-spacing: 2px;
+            padding: 4px 10px;
+            border: 1px solid var(--border);
+            color: var(--accent);
+        }
+        .type-badge.website { color: #00cfff; border-color: rgba(0,207,255,0.3); }
+
+        /* TARGET */
+        .scan-target {
+            font-weight: 600;
+            color: #fff;
+            font-size: 0.9rem;
+            max-width: 220px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* RESULT */
+        .result-dot {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+        }
+        .dot { width: 8px; height: 8px; border-radius: 50%; }
+        .dot-safe { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+        .dot-malicious { background: var(--danger); box-shadow: 0 0 6px var(--danger); }
+        .dot-suspicious { background: var(--warning); box-shadow: 0 0 6px var(--warning); }
+        .dot-vulnerable { background: var(--warning); box-shadow: 0 0 6px var(--warning); }
+
+        /* SCORE bar inline */
+        .score-cell {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .score-mini-wrap {
+            width: 70px;
+            height: 5px;
+            background: rgba(255,255,255,0.05);
+        }
+        .score-mini-bar {
+            height: 100%;
+            border-radius: 2px;
+        }
+        .score-num {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--muted);
+            width: 32px;
+        }
+
+        /* DATE */
+        .scan-date {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.72rem;
+            color: var(--muted);
+        }
+
+        /* PDF BUTTON */
+        .btn-pdf {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+            padding: 6px 14px;
+            border: 1px solid rgba(0,255,180,0.3);
+            color: var(--accent);
+            background: transparent;
+            text-decoration: none;
+            transition: 0.3s;
+            white-space: nowrap;
+        }
+        .btn-pdf:hover {
+            background: rgba(0,255,180,0.08);
+            border-color: var(--accent);
+            box-shadow: var(--glow);
+            color: var(--accent);
+        }
+
+        /* EMPTY STATE */
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            border: 1px dashed var(--border);
+        }
+        .empty-icon { font-size: 3rem; margin-bottom: 15px; }
+        .empty-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 1rem;
+            color: var(--muted);
+            letter-spacing: 2px;
+        }
+
+        .table-wrap {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            overflow-x: auto;
+        }
+
+        .divider-line { height: 1px; background: var(--border); margin: 0 16px; }
+
+        a { color: inherit; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar">
+    <a class="navbar-brand" href="/">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="logo" class="nav-logo">
+        CYBERSCAN
+    </a>
+    <div style="display:flex; gap:12px;">
+        <a href="/scanner" class="btn-back">SCANNER</a>
+        <a href="/" class="btn-back">← HOME</a>
+    </div>
+</nav>
+
+<div class="page-wrap">
+<div class="container" style="max-width: 1100px;">
+
+    <div class="page-header">
+        <div class="page-tag">// SCAN LOG</div>
+        <h1 class="page-title">SCAN <span>HISTORY</span></h1>
+    </div>
+
+    {% if scans %}
+
+    <!-- STATS BAR -->
+    <div class="stats-bar">
+        <div class="stat-pill">
+            <span class="stat-pill-num">{{ scans|length }}</span>
+            <span class="stat-pill-label">TOTAL SCANS</span>
+        </div>
+        <div class="stat-pill">
+            <span class="stat-pill-num" style="color:#ff3c5a;">
+                {{ scans|selectattr('result','equalto','malicious')|list|length }}
+            </span>
+            <span class="stat-pill-label">THREATS FOUND</span>
+        </div>
+        <div class="stat-pill">
+            <span class="stat-pill-num" style="color:#00cfff;">
+                {{ scans|selectattr('scan_type','equalto','website')|list|length }}
+            </span>
+            <span class="stat-pill-label">WEBSITE SCANS</span>
+        </div>
+        <div class="stat-pill">
+            <span class="stat-pill-num">
+                {{ scans|selectattr('scan_type','equalto','file')|list|length }}
+            </span>
+            <span class="stat-pill-label">FILE SCANS</span>
+        </div>
+    </div>
+
+    <!-- TABLE -->
+    <div class="table-wrap">
+        <table class="history-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>TYPE</th>
+                    <th>TARGET</th>
+                    <th>RESULT</th>
+                    <th>RISK SCORE</th>
+                    <th>DATE</th>
+                    <th>REPORT</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for scan in scans %}
+                <tr>
+                    <!-- ID -->
+                    <td><span class="scan-id">#{{ scan.id }}</span></td>
+
+                    <!-- TYPE -->
+                    <td>
+                        {% if scan.scan_type == 'file' %}
+                            <span class="type-badge">FILE</span>
+                        {% else %}
+                            <span class="type-badge website">WEB</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- TARGET -->
+                    <td><div class="scan-target" title="{{ scan.target }}">{{ scan.target }}</div></td>
+
+                    <!-- RESULT -->
+                    <td>
+                        <span class="result-dot">
+                            {% if scan.result == 'malicious' %}
+                                <span class="dot dot-malicious"></span> MALICIOUS
+                            {% elif scan.result == 'suspicious' %}
+                                <span class="dot dot-suspicious"></span> SUSPICIOUS
+                            {% elif scan.result == 'vulnerable' %}
+                                <span class="dot dot-vulnerable"></span> VULNERABLE
+                            {% else %}
+                                <span class="dot dot-safe"></span> CLEAN
+                            {% endif %}
+                        </span>
+                    </td>
+
+                    <!-- SCORE -->
+                    <td>
+                        <div class="score-cell">
+                            <div class="score-mini-wrap">
+                                <div class="score-mini-bar"
+                                     style="width:{{ scan.score }}%;
+                                            background: {% if scan.score > 50 %}#ff3c5a{% elif scan.score > 20 %}#ffd60a{% else %}#00ffb4{% endif %};">
+                                </div>
+                            </div>
+                            <span class="score-num">{{ scan.score }}%</span>
+                        </div>
+                    </td>
+
+                    <!-- DATE -->
+                    <td><span class="scan-date">{{ scan.scanned_at }}</span></td>
+
+                    <!-- REPORT -->
+                    <td>
+                        <a href="/report/{{ scan.id }}" class="btn-pdf" target="_blank">↓ PDF</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% else %}
+
+    <div class="empty-state">
+        <div class="empty-icon">🛡️</div>
+        <div class="empty-title">NO SCANS YET</div>
+        <p style="color: var(--muted); margin-top:10px; font-size:0.9rem;">
+            Run your first scan to see history here.
+        </p>
+        <a href="/scanner" style="display:inline-block; margin-top:20px;" class="btn-back">GO TO SCANNER →</a>
+    </div>
+
+    {% endif %}
+
+</div>
+</div>
+
+</body>
+</html>
